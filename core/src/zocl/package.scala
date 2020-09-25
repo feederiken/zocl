@@ -134,24 +134,24 @@ package object zocl {
     *
     * Uses [[org.jocl.CL.clSetEventCallback]].
     */
-  def waitEvent(event: Event): ZIO[CL, CLException, Unit] =
-    ZIO.service[Service] >>= { _.waitEvent(event) }
+  def waitForEvent(event: Event): ZIO[CL, CLException, Unit] =
+    ZIO.service[Service] >>= { _.waitForEvent(event) }
 
   /**
     * Asynchronously wait for some events to complete.
     *
     * Uses [[org.jocl.CL.clSetEventCallback]].
     */
-  def waitEvent(events: Event*): ZIO[CL, CLException, Unit] =
-    waitEvents(events.toSeq)
+  def waitForEvent(events: Event*): ZIO[CL, CLException, Unit] =
+    waitForEvents(events.toSeq)
 
   /**
     * Asynchronously wait for some events to complete.
     *
     * Uses [[org.jocl.CL.clSetEventCallback]].
     */
-  def waitEvents(events: Seq[Event]): ZIO[CL, CLException, Unit] =
-    ZIO.foreachPar_(events) { waitEvent(_) }
+  def waitForEvents(events: Seq[Event]): ZIO[CL, CLException, Unit] =
+    ZIO.foreachPar_(events) { waitForEvent(_) }
 
   /**
     * Synchronously block on some events.

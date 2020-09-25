@@ -65,7 +65,7 @@ trait Service extends Serializable {
       arg_size: Long,
       arg_value: Pointer,
   ): IO[CLException, Unit]
-  def waitEvent(event: Event): IO[CLException, Unit]
+  def waitForEvent(event: Event): IO[CLException, Unit]
   def waitForEventsBlocking(
       events: Seq[Event]
   ): ZIO[Blocking, CLException, Unit]
@@ -304,7 +304,7 @@ private final class Implementation extends Service {
       releaseEvent
     }
 
-  def waitEvent(event: Event) =
+  def waitForEvent(event: Event) =
     IO.effectAsync { (cb: Callback) =>
       val result = clSetEventCallback(event, CL_SUCCESS, CallbackAdapter, cb)
       if (result < 0) cb(checkResult(result))
