@@ -7,6 +7,8 @@ import zio.blocking.Blocking
   * It's type-safe, resource safe and asynchronous-enabled, but won't check for buffer overflows or endianness.
   *
   * Note: the bindings disable JOCL's exception throwing feature and work best when it stays disabled.
+  *
+  * @define releaseUnsafe In normal use, it is redundant to call this operation directly because zocl resources are managed through ZManaged.
   */
 package object zocl {
   type CL = Has[Service]
@@ -20,7 +22,7 @@ package object zocl {
   type Context = org.jocl.cl_context
   type ContextProperties = org.jocl.cl_context_properties
   type CommandQueue = org.jocl.cl_command_queue
-  type Buffer = org.jocl.cl_mem
+  type MemObject = org.jocl.cl_mem
   type CLException = org.jocl.CLException
 
   val getPlatformIds: ZIO[CL, CLException, Chunk[PlatformId]] =
@@ -57,7 +59,7 @@ package object zocl {
       flags: Long,
       size: Long,
       ptr: Option[Pointer] = None,
-  ): ZManaged[CL, CLException, Buffer] =
+  ): ZManaged[CL, CLException, MemObject] =
     ZManaged.service[Service] >>= { _.createBuffer(ctx, flags, size, ptr) }
   def createKernel(
       prog: Program,
@@ -66,7 +68,7 @@ package object zocl {
     ZManaged.service[Service] >>= { _.createKernel(prog, kernelName) }
   def enqueueReadBuffer(
       q: CommandQueue,
-      buffer: Buffer,
+      buffer: MemObject,
       offset: Long,
       count: Long,
       ptr: Pointer,
@@ -162,4 +164,54 @@ package object zocl {
       events: Seq[Event]
   ): ZIO[CL with Blocking, CLException, Unit] =
     ZIO.service[Service] >>= { _.waitForEventsBlocking(events) }
+
+  def retainContext(ctx: Context): ZManaged[CL, CLException, Context] =
+    ZManaged.service[Service] >>= { _.retainContext(ctx) }
+    /**
+     * Release the resources associated with the given context directly.
+     *
+     * $releaseUnsafe
+     */
+  def releaseContextUnsafe(ctx: Context): ZIO[CL, CLException, Unit] =
+    ZIO.service[Service] >>= { _.releaseContextUnsafe(ctx) }
+
+  def retainCommandQueue(queue: CommandQueue): ZManaged[CL, CLException, CommandQueue] =
+    ZManaged.service[Service] >>= { _.retainCommandQueue(queue) }
+    /**
+     * Release the resources associated with the given command queue directly.
+     *
+     * $releaseUnsafe
+     */
+  def releaseCommandQueueUnsafe(queue: CommandQueue): ZIO[CL, CLException, Unit] =
+    ZIO.service[Service] >>= { _.releaseCommandQueueUnsafe(queue) }
+
+  def retainMemObject(mem: MemObject): ZManaged[CL, CLException, MemObject] =
+    ZManaged.service[Service] >>= { _.retainMemObject(mem) }
+    /**
+     * Release the resources associated with the given memory object directly.
+     *
+     * $releaseUnsafe
+     */
+  def releaseMemObjectUnsafe(mem: MemObject): ZIO[CL, CLException, Unit] =
+    ZIO.service[Service] >>= { _.releaseMemObjectUnsafe(mem) }
+
+  def retainProgram(prog: Program): ZManaged[CL, CLException, Program] =
+    ZManaged.service[Service] >>= { _.retainProgram(prog) }
+    /**
+     * Release the resources associated with the given program directly.
+     *
+     * $releaseUnsafe
+     */
+  def releaseProgramUnsafe(prog: Program): ZIO[CL, CLException, Unit] =
+    ZIO.service[Service] >>= { _.releaseProgramUnsafe(prog) }
+
+  def retainEvent(event: Event): ZManaged[CL, CLException, Event] =
+    ZManaged.service[Service] >>= { _.retainEvent(event) }
+    /**
+     * Release the resources associated with the given event directly.
+     *
+     * $releaseUnsafe
+     */
+  def releaseEventUnsafe(event: Event): ZIO[CL, CLException, Unit] =
+    ZIO.service[Service] >>= { _.releaseEventUnsafe(event) }
 }

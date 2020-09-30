@@ -28,14 +28,14 @@ trait Service extends Serializable {
       flags: Long,
       size: Long,
       ptr: Option[Pointer],
-  ): Managed[CLException, Buffer]
+  ): Managed[CLException, MemObject]
   def createKernel(
       prog: Program,
       kernelName: String,
   ): Managed[CLException, Kernel]
   def enqueueReadBuffer(
       q: CommandQueue,
-      buffer: Buffer,
+      buffer: MemObject,
       offset: Long,
       count: Long,
       ptr: Pointer,
@@ -69,6 +69,18 @@ trait Service extends Serializable {
   def waitForEventsBlocking(
       events: Seq[Event]
   ): ZIO[Blocking, CLException, Unit]
+  def retainKernel(kernel: Kernel): Managed[CLException, Kernel]
+  def releaseKernelUnsafe(kernel: Kernel): IO[CLException, Unit]
+  def retainCommandQueue(queue: CommandQueue): Managed[CLException, CommandQueue]
+  def releaseCommandQueueUnsafe(queue: CommandQueue): IO[CLException, Unit]
+  def retainMemObject(mem: MemObject): Managed[CLException, MemObject]
+  def releaseMemObjectUnsafe(mem: MemObject): IO[CLException, Unit]
+  def retainProgram(prog: Program): Managed[CLException, Program]
+  def releaseProgramUnsafe(prog: Program): IO[CLException, Unit]
+  def retainContext(ctx: Context): Managed[CLException, Context]
+  def releaseContextUnsafe(ctx: Context): IO[CLException, Unit]
+  def retainEvent(event: Event): Managed[CLException, Event]
+  def releaseEventUnsafe(event: Event): IO[CLException, Unit]
 }
 
 private object Implementation {
@@ -101,8 +113,54 @@ private object Implementation {
 }
 
 private final class Implementation extends Service {
+
   import Implementation._
   setExceptionsEnabled(false)
+
+  override def retainKernel(kernel: Kernel): Managed[CLException, Kernel] = ZManaged.make {
+    IO.effectSuspendTotal {
+      val result = clRetainKernel(kernel)
+      checkResult(result).as(kernel)
+    }
+  } {
+    releaseKernelUnsafe(_).orDie
+  }
+
+  override def retainMemObject(mem: MemObject): Managed[CLException, MemObject] = ZManaged.make {
+    IO.effectSuspendTotal {
+      val result = clRetainMemObject(mem)
+      checkResult(result).as(mem)
+    }
+  } {
+    releaseMemObjectUnsafe(_).orDie
+  }
+
+  override def retainProgram(prog: Program): Managed[CLException, Program] = ZManaged.make {
+    IO.effectSuspendTotal {
+      val result = clRetainProgram(prog)
+      checkResult(result).as(prog)
+    }
+  } {
+    releaseProgramUnsafe(_).orDie
+  }
+
+  override def retainContext(ctx: Context): Managed[CLException, Context] = ZManaged.make {
+    IO.effectSuspendTotal {
+      val result = clRetainContext(ctx)
+      checkResult(result).as(ctx)
+    }
+  } {
+    releaseContextUnsafe(_).orDie
+  }
+
+  override def retainEvent(event: Event): Managed[CLException, Event] = ZManaged.make {
+    IO.effectSuspendTotal {
+      val result = clRetainEvent(event)
+      checkResult(result).as(event)
+    }
+  } {
+    releaseEventUnsafe(_).orDie
+  }
 
   private def nullIfEmpty[A](a: Array[A]): Array[A] =
     // CL functions don't like empty arrays
@@ -139,30 +197,32 @@ private final class Implementation extends Service {
       }
     }
 
-  def releaseContext(ctx: Context) =
-    IO.effectSuspend {
+  override def releaseContextUnsafe(ctx: Context) =
+    IO.effectSuspendTotal {
       checkResult(clReleaseContext(ctx))
-    }.orDie
-  def releaseCommandQueue(q: CommandQueue) =
-    IO.effectSuspend {
+    }
+
+  override def releaseCommandQueueUnsafe(q: CommandQueue) =
+    IO.effectSuspendTotal {
       checkResult(clReleaseCommandQueue(q))
-    }.orDie
-  def releaseProgram(prog: Program) =
-    IO.effectSuspend {
+    }
+
+  override def releaseProgramUnsafe(prog: Program) =
+    IO.effectSuspendTotal {
       checkResult(clReleaseProgram(prog))
-    }.orDie
-  def releaseMemObject(buf: Buffer) =
-    IO.effectSuspend {
-      checkResult(clReleaseMemObject(buf))
-    }.orDie
-  def releaseKernel(k: Kernel) =
-    IO.effectSuspend {
+    }
+  override def releaseMemObjectUnsafe(mem: MemObject) =
+    IO.effectSuspendTotal {
+      checkResult(clReleaseMemObject(mem))
+    }
+  override def releaseKernelUnsafe(k: Kernel) =
+    IO.effectSuspendTotal {
       checkResult(clReleaseKernel(k))
-    }.orDie
-  def releaseEvent(event: Event) =
-    IO.effectSuspend {
+    }
+  override def releaseEventUnsafe(event: Event) =
+    IO.effectSuspendTotal {
       checkResult(clReleaseEvent(event))
-    }.orDie
+    }
 
   def createContext(props: ContextProperties, devices: Seq[DeviceId]) =
     Managed.make {
@@ -174,7 +234,7 @@ private final class Implementation extends Service {
         checkResult(result(0)).as(ctx)
       }
     } {
-      releaseContext
+      releaseContextUnsafe(_).orDie
     }
 
   def createCommandQueue(ctx: Context, device: DeviceId) =
@@ -185,7 +245,7 @@ private final class Implementation extends Service {
         checkResult(result(0)).as(q)
       }
     } {
-      releaseCommandQueue
+      releaseCommandQueueUnsafe(_).orDie
     }
 
   def createProgramWithSource(ctx: Context, programSource: Seq[String]) =
@@ -203,7 +263,7 @@ private final class Implementation extends Service {
         checkResult(result(0)).as(prog)
       }
     } {
-      releaseProgram
+      releaseProgramUnsafe(_).orDie
     }
 
   def createBuffer(
@@ -219,7 +279,7 @@ private final class Implementation extends Service {
         checkResult(result(0)).as(buf)
       }
     } {
-      releaseMemObject
+      releaseMemObjectUnsafe(_).orDie
     }
 
   def createKernel(prog: Program, kernelName: String) =
@@ -230,12 +290,12 @@ private final class Implementation extends Service {
         checkResult(result(0)).as(k)
       }
     } {
-      releaseKernel
+      releaseKernelUnsafe(_).orDie
     }
 
   def enqueueReadBuffer(
       q: CommandQueue,
-      buffer: Buffer,
+      buffer: MemObject,
       offset: Long,
       count: Long,
       ptr: Pointer,
@@ -259,7 +319,7 @@ private final class Implementation extends Service {
         checkResult(result).as(event)
       }
     } {
-      releaseEvent
+      releaseEventUnsafe(_).orDie
     }
 
   def enqueueNDRangeKernel(
@@ -301,7 +361,7 @@ private final class Implementation extends Service {
         checkResult(result).as(event)
       }
     } {
-      releaseEvent
+      releaseEventUnsafe(_).orDie
     }
 
   def waitForEvent(event: Event) =
@@ -356,4 +416,12 @@ private final class Implementation extends Service {
         checkResult(clWaitForEvents(eventsA.length, eventsA))
       }
     }
+
+  override def retainCommandQueue(queue: CommandQueue) = ZManaged.make {
+    IO.effectSuspendTotal {
+      checkResult(clRetainCommandQueue(queue)).as(queue)
+    }
+  } {
+    releaseCommandQueueUnsafe(_).orDie
+  }
 }
