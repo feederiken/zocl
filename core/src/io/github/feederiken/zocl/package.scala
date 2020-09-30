@@ -1,3 +1,5 @@
+package io.github.feederiken
+
 import zio._
 import zio.blocking.Blocking
 
@@ -10,6 +12,7 @@ import zio.blocking.Blocking
   *
   * @define releaseUnsafe In normal use, it is redundant to call this operation directly because zocl resources are managed through ZManaged.
   */
+
 package object zocl {
   type CL = Has[Service]
 

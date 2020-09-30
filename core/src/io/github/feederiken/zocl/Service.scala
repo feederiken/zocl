@@ -1,4 +1,4 @@
-package zocl
+package io.github.feederiken.zocl
 
 import zio._, zio.blocking.Blocking
 

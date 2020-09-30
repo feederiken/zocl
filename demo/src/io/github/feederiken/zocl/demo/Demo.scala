@@ -1,8 +1,8 @@
-package zocl.demo
+package io.github.feederiken.zocl.demo
 
 import zio._, zio.blocking._, zio.nio.core._
 import org.jocl.CL._, org.jocl.{Pointer, Sizeof}
-import zocl._
+import io.github.feederiken.zocl._
 import java.io.EOFException
 
 object Demo extends App {
