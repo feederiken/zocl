@@ -170,51 +170,60 @@ package object zocl {
 
   def retainContext(ctx: Context): ZManaged[CL, CLException, Context] =
     ZManaged.service[Service] >>= { _.retainContext(ctx) }
-    /**
-     * Release the resources associated with the given context directly.
-     *
-     * $releaseUnsafe
-     */
+
+  /**
+    * Release the resources associated with the given context directly.
+    *
+    * $releaseUnsafe
+    */
   def releaseContextUnsafe(ctx: Context): ZIO[CL, CLException, Unit] =
     ZIO.service[Service] >>= { _.releaseContextUnsafe(ctx) }
 
-  def retainCommandQueue(queue: CommandQueue): ZManaged[CL, CLException, CommandQueue] =
+  def retainCommandQueue(
+      queue: CommandQueue
+  ): ZManaged[CL, CLException, CommandQueue] =
     ZManaged.service[Service] >>= { _.retainCommandQueue(queue) }
-    /**
-     * Release the resources associated with the given command queue directly.
-     *
-     * $releaseUnsafe
-     */
-  def releaseCommandQueueUnsafe(queue: CommandQueue): ZIO[CL, CLException, Unit] =
+
+  /**
+    * Release the resources associated with the given command queue directly.
+    *
+    * $releaseUnsafe
+    */
+  def releaseCommandQueueUnsafe(
+      queue: CommandQueue
+  ): ZIO[CL, CLException, Unit] =
     ZIO.service[Service] >>= { _.releaseCommandQueueUnsafe(queue) }
 
   def retainMemObject(mem: MemObject): ZManaged[CL, CLException, MemObject] =
     ZManaged.service[Service] >>= { _.retainMemObject(mem) }
-    /**
-     * Release the resources associated with the given memory object directly.
-     *
-     * $releaseUnsafe
-     */
+
+  /**
+    * Release the resources associated with the given memory object directly.
+    *
+    * $releaseUnsafe
+    */
   def releaseMemObjectUnsafe(mem: MemObject): ZIO[CL, CLException, Unit] =
     ZIO.service[Service] >>= { _.releaseMemObjectUnsafe(mem) }
 
   def retainProgram(prog: Program): ZManaged[CL, CLException, Program] =
     ZManaged.service[Service] >>= { _.retainProgram(prog) }
-    /**
-     * Release the resources associated with the given program directly.
-     *
-     * $releaseUnsafe
-     */
+
+  /**
+    * Release the resources associated with the given program directly.
+    *
+    * $releaseUnsafe
+    */
   def releaseProgramUnsafe(prog: Program): ZIO[CL, CLException, Unit] =
     ZIO.service[Service] >>= { _.releaseProgramUnsafe(prog) }
 
   def retainEvent(event: Event): ZManaged[CL, CLException, Event] =
     ZManaged.service[Service] >>= { _.retainEvent(event) }
-    /**
-     * Release the resources associated with the given event directly.
-     *
-     * $releaseUnsafe
-     */
+
+  /**
+    * Release the resources associated with the given event directly.
+    *
+    * $releaseUnsafe
+    */
   def releaseEventUnsafe(event: Event): ZIO[CL, CLException, Unit] =
     ZIO.service[Service] >>= { _.releaseEventUnsafe(event) }
 }

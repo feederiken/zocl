@@ -71,7 +71,9 @@ trait Service extends Serializable {
   ): ZIO[Blocking, CLException, Unit]
   def retainKernel(kernel: Kernel): Managed[CLException, Kernel]
   def releaseKernelUnsafe(kernel: Kernel): IO[CLException, Unit]
-  def retainCommandQueue(queue: CommandQueue): Managed[CLException, CommandQueue]
+  def retainCommandQueue(
+      queue: CommandQueue
+  ): Managed[CLException, CommandQueue]
   def releaseCommandQueueUnsafe(queue: CommandQueue): IO[CLException, Unit]
   def retainMemObject(mem: MemObject): Managed[CLException, MemObject]
   def releaseMemObjectUnsafe(mem: MemObject): IO[CLException, Unit]
@@ -117,50 +119,57 @@ private final class Implementation extends Service {
   import Implementation._
   setExceptionsEnabled(false)
 
-  override def retainKernel(kernel: Kernel): Managed[CLException, Kernel] = ZManaged.make {
-    IO.effectSuspendTotal {
-      val result = clRetainKernel(kernel)
-      checkResult(result).as(kernel)
+  override def retainKernel(kernel: Kernel): Managed[CLException, Kernel] =
+    ZManaged.make {
+      IO.effectSuspendTotal {
+        val result = clRetainKernel(kernel)
+        checkResult(result).as(kernel)
+      }
+    } {
+      releaseKernelUnsafe(_).orDie
     }
-  } {
-    releaseKernelUnsafe(_).orDie
-  }
 
-  override def retainMemObject(mem: MemObject): Managed[CLException, MemObject] = ZManaged.make {
-    IO.effectSuspendTotal {
-      val result = clRetainMemObject(mem)
-      checkResult(result).as(mem)
+  override def retainMemObject(
+      mem: MemObject
+  ): Managed[CLException, MemObject] =
+    ZManaged.make {
+      IO.effectSuspendTotal {
+        val result = clRetainMemObject(mem)
+        checkResult(result).as(mem)
+      }
+    } {
+      releaseMemObjectUnsafe(_).orDie
     }
-  } {
-    releaseMemObjectUnsafe(_).orDie
-  }
 
-  override def retainProgram(prog: Program): Managed[CLException, Program] = ZManaged.make {
-    IO.effectSuspendTotal {
-      val result = clRetainProgram(prog)
-      checkResult(result).as(prog)
+  override def retainProgram(prog: Program): Managed[CLException, Program] =
+    ZManaged.make {
+      IO.effectSuspendTotal {
+        val result = clRetainProgram(prog)
+        checkResult(result).as(prog)
+      }
+    } {
+      releaseProgramUnsafe(_).orDie
     }
-  } {
-    releaseProgramUnsafe(_).orDie
-  }
 
-  override def retainContext(ctx: Context): Managed[CLException, Context] = ZManaged.make {
-    IO.effectSuspendTotal {
-      val result = clRetainContext(ctx)
-      checkResult(result).as(ctx)
+  override def retainContext(ctx: Context): Managed[CLException, Context] =
+    ZManaged.make {
+      IO.effectSuspendTotal {
+        val result = clRetainContext(ctx)
+        checkResult(result).as(ctx)
+      }
+    } {
+      releaseContextUnsafe(_).orDie
     }
-  } {
-    releaseContextUnsafe(_).orDie
-  }
 
-  override def retainEvent(event: Event): Managed[CLException, Event] = ZManaged.make {
-    IO.effectSuspendTotal {
-      val result = clRetainEvent(event)
-      checkResult(result).as(event)
+  override def retainEvent(event: Event): Managed[CLException, Event] =
+    ZManaged.make {
+      IO.effectSuspendTotal {
+        val result = clRetainEvent(event)
+        checkResult(result).as(event)
+      }
+    } {
+      releaseEventUnsafe(_).orDie
     }
-  } {
-    releaseEventUnsafe(_).orDie
-  }
 
   private def nullIfEmpty[A](a: Array[A]): Array[A] =
     // CL functions don't like empty arrays
@@ -417,11 +426,12 @@ private final class Implementation extends Service {
       }
     }
 
-  override def retainCommandQueue(queue: CommandQueue) = ZManaged.make {
-    IO.effectSuspendTotal {
-      checkResult(clRetainCommandQueue(queue)).as(queue)
+  override def retainCommandQueue(queue: CommandQueue) =
+    ZManaged.make {
+      IO.effectSuspendTotal {
+        checkResult(clRetainCommandQueue(queue)).as(queue)
+      }
+    } {
+      releaseCommandQueueUnsafe(_).orDie
     }
-  } {
-    releaseCommandQueueUnsafe(_).orDie
-  }
 }

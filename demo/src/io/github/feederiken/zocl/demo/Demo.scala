@@ -32,7 +32,7 @@ object Demo extends App {
           ctx,
           CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
           Sizeof.cl_float,
-          Some(two)
+          Some(two),
         )
       )
       bufB <- lift(
@@ -40,7 +40,7 @@ object Demo extends App {
           ctx,
           CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
           Sizeof.cl_float,
-          Some(two)
+          Some(two),
         )
       )
       bufC <- lift(createBuffer(ctx, CL_MEM_WRITE_ONLY, Sizeof.cl_float))
