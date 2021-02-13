@@ -307,6 +307,89 @@ private object Implementation extends Service {
       enqueueReadBufferImpl(q, buffer, true, offset, count, ptr, waitList, null)
     }
 
+  private def enqueueWriteBufferImpl(
+      q: CommandQueue,
+      buffer: MemObject,
+      blockingWrite: Boolean,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event],
+      event: Event,
+  ) =
+    IO.effectSuspendTotal {
+      val waitListA = waitList.toArray
+      val result = clEnqueueWriteBuffer(
+        q,
+        buffer,
+        blockingWrite,
+        offset,
+        count,
+        ptr,
+        waitListA.length,
+        nullIfEmpty(waitListA),
+        event,
+      )
+      checkResult(result)
+    }
+
+  def enqueueWriteBuffer(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event],
+  ) =
+    makeEvent.tapM {
+      enqueueWriteBufferImpl(q, buffer, false, offset, count, ptr, waitList, _)
+    }
+
+  def enqueueWriteBuffer_(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event],
+  ) =
+    enqueueWriteBufferImpl(q, buffer, false, offset, count, ptr, waitList, null)
+
+  def enqueueWriteBufferBlocking(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event],
+  ) =
+    makeEvent.tapM { event =>
+      blocking.blocking {
+        enqueueWriteBufferImpl(
+          q,
+          buffer,
+          true,
+          offset,
+          count,
+          ptr,
+          waitList,
+          event,
+        )
+      }
+    }
+
+  def enqueueWriteBufferBlocking_(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event],
+  ) =
+    blocking.blocking {
+      enqueueWriteBufferImpl(q, buffer, true, offset, count, ptr, waitList, null)
+    }
+
   private def enqueueNDRangeKernelImpl(
       q: CommandQueue,
       kernel: Kernel,

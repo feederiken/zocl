@@ -62,6 +62,38 @@ trait Service extends Serializable {
       ptr: Pointer,
       waitList: Seq[Event],
   ): ZIO[Blocking, CLException, Unit]
+  def enqueueWriteBuffer(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event],
+  ): Managed[CLException, Event]
+  def enqueueWriteBuffer_(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event],
+  ): IO[CLException, Unit]
+  def enqueueWriteBufferBlocking(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event],
+  ): ZManaged[Blocking, CLException, Event]
+  def enqueueWriteBufferBlocking_(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event],
+  ): ZIO[Blocking, CLException, Unit]
   def enqueueNDRangeKernel(
       q: CommandQueue,
       kernel: Kernel,

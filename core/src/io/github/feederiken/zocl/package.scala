@@ -69,6 +69,7 @@ package object zocl {
       kernelName: String,
   ): ZManaged[CL, CLException, Kernel] =
     ZManaged.service[Service] >>= { _.createKernel(prog, kernelName) }
+
   def enqueueReadBuffer(
       q: CommandQueue,
       buffer: MemObject,
@@ -112,6 +113,51 @@ package object zocl {
   ): ZIO[CL with Blocking, CLException, Unit] =
     ZIO.service[Service] >>= {
       _.enqueueReadBufferBlocking_(q, buffer, offset, count, ptr, waitList)
+    }
+
+  def enqueueWriteBuffer(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event] = Nil,
+  ): ZManaged[CL, CLException, Event] =
+    ZManaged.service[Service] >>= {
+      _.enqueueWriteBuffer(q, buffer, offset, count, ptr, waitList)
+    }
+  def enqueueWriteBuffer_(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event] = Nil,
+  ): ZIO[CL, CLException, Unit] =
+    ZIO.service[Service] >>= {
+      _.enqueueWriteBuffer_(q, buffer, offset, count, ptr, waitList)
+    }
+  def enqueueWriteBufferBlocking(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event] = Nil,
+  ): ZManaged[CL with Blocking, CLException, Event] =
+    ZManaged.service[Service] >>= {
+      _.enqueueWriteBufferBlocking(q, buffer, offset, count, ptr, waitList)
+    }
+  def enqueueWriteBufferBlocking_(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event] = Nil,
+  ): ZIO[CL with Blocking, CLException, Unit] =
+    ZIO.service[Service] >>= {
+      _.enqueueWriteBufferBlocking_(q, buffer, offset, count, ptr, waitList)
     }
 
   def enqueueNDRangeKernel(
