@@ -1,7 +1,7 @@
 package io.github.feederiken.zocl.demo
 
 import zio._, zio.blocking._, zio.nio.core._
-import org.jocl.CL._, org.jocl.{Pointer, Sizeof}
+import org.jocl.CL._, org.jocl.Sizeof
 import io.github.feederiken.zocl._
 import java.io.EOFException
 
@@ -26,7 +26,7 @@ object Demo extends App {
       prog <- lift(createProgramWithSource(ctx, prog))
       _ <- buildProgram(prog, ds)
       k <- lift(createKernel(prog, "sampleKernel"))
-      two = Pointer.to(Array(2f))
+      two = Pointer(Array(2f))
       bufA <- lift(
         createBuffer(
           ctx,
@@ -44,13 +44,13 @@ object Demo extends App {
         )
       )
       bufC <- lift(createBuffer(ctx, CL_MEM_WRITE_ONLY, Sizeof.cl_float))
-      _ <- setKernelArgs(k, 0, Sizeof.cl_mem, Pointer.to(bufA))
-      _ <- setKernelArgs(k, 1, Sizeof.cl_mem, Pointer.to(bufB))
-      _ <- setKernelArgs(k, 2, Sizeof.cl_mem, Pointer.to(bufC))
+      _ <- setKernelArgs(k, 0, Sizeof.cl_mem, Pointer(bufA))
+      _ <- setKernelArgs(k, 1, Sizeof.cl_mem, Pointer(bufB))
+      _ <- setKernelArgs(k, 2, Sizeof.cl_mem, Pointer(bufC))
       _ <- enqueueNDRangeKernel(q, k).use(waitForEvent)
       dest <- Buffer.byteDirect(Sizeof.cl_float)
       _ <- dest.order(java.nio.ByteOrder.nativeOrder)
-      destptr <- dest.withJavaBuffer(b => UIO(Pointer.to(b)))
+      destptr <- dest.withJavaBuffer(b => UIO(Pointer(b)))
       _ <- enqueueReadBuffer(q, bufC, 0, Sizeof.cl_float, destptr)
         .use(waitForEvent)
       r <- dest.getFloat
