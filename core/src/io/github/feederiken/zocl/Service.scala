@@ -73,6 +73,14 @@ trait Service extends Serializable {
       localWorkSize: Option[Seq[Long]],
       waitList: Seq[Event],
   ): Managed[CLException, Event]
+  def enqueueNDRangeKernel_(
+      q: CommandQueue,
+      kernel: Kernel,
+      globalWorkOffset: Option[Seq[Long]],
+      globalWorkSize: Seq[Long],
+      localWorkSize: Option[Seq[Long]],
+      waitList: Seq[Event],
+  ): IO[CLException, Unit]
   def buildProgram(
       prog: Program,
       devices: Seq[DeviceId],
@@ -416,6 +424,43 @@ private final class Implementation extends Service {
       enqueueReadBufferImpl(q, buffer, true, offset, count, ptr, waitList, null)
     }
 
+  private def enqueueNDRangeKernelImpl(
+      q: CommandQueue,
+      kernel: Kernel,
+      globalWorkOffset: Option[Seq[Long]],
+      globalWorkSize: Seq[Long],
+      localWorkSize: Option[Seq[Long]],
+      waitList: Seq[Event],
+      event: Event,
+  ) =
+    IO.effectSuspendTotal {
+      val globalWorkOffsetA = globalWorkOffset.map(_.toArray)
+      val globalWorkSizeA = globalWorkSize.toArray
+      val localWorkSizeA = localWorkSize.map(_.toArray)
+      val workDim = globalWorkSizeA.length
+      globalWorkOffsetA.foreach { a =>
+        require(
+          a.length == workDim,
+          "globalWorkOffset has inconsistent length",
+        )
+      }
+      localWorkSizeA.foreach { a =>
+        require(a.length == workDim, "localWorkSize has inconsistent length")
+      }
+      val waitListA = waitList.toArray
+      val result = clEnqueueNDRangeKernel(
+        q,
+        kernel,
+        globalWorkSizeA.length,
+        globalWorkOffsetA.orNull,
+        globalWorkSizeA,
+        localWorkSizeA.orNull,
+        waitListA.length,
+        nullIfEmpty(waitListA),
+        event,
+      )
+      checkResult(result)
+    }
   def enqueueNDRangeKernel(
       q: CommandQueue,
       kernel: Kernel,
@@ -424,39 +469,34 @@ private final class Implementation extends Service {
       localWorkSize: Option[Seq[Long]],
       waitList: Seq[Event],
   ) =
-    Managed.make {
-      IO.effectSuspendTotal {
-        val globalWorkOffsetA = globalWorkOffset.map(_.toArray)
-        val globalWorkSizeA = globalWorkSize.toArray
-        val localWorkSizeA = localWorkSize.map(_.toArray)
-        val workDim = globalWorkSizeA.length
-        globalWorkOffsetA.foreach { a =>
-          require(
-            a.length == workDim,
-            "globalWorkOffset has inconsistent length",
-          )
-        }
-        localWorkSizeA.foreach { a =>
-          require(a.length == workDim, "localWorkSize has inconsistent length")
-        }
-        val waitListA = waitList.toArray
-        val event = new Event
-        val result = clEnqueueNDRangeKernel(
-          q,
-          kernel,
-          globalWorkSizeA.length,
-          globalWorkOffsetA.orNull,
-          globalWorkSizeA,
-          localWorkSizeA.orNull,
-          waitListA.length,
-          nullIfEmpty(waitListA),
-          event,
-        )
-        checkResult(result).as(event)
-      }
-    } {
-      releaseEventUnsafe(_).orDie
+    makeEvent.tapM {
+      enqueueNDRangeKernelImpl(
+        q,
+        kernel,
+        globalWorkOffset,
+        globalWorkSize,
+        localWorkSize,
+        waitList,
+        _,
+      )
     }
+  def enqueueNDRangeKernel_(
+      q: CommandQueue,
+      kernel: Kernel,
+      globalWorkOffset: Option[Seq[Long]],
+      globalWorkSize: Seq[Long],
+      localWorkSize: Option[Seq[Long]],
+      waitList: Seq[Event],
+  ) =
+    enqueueNDRangeKernelImpl(
+      q,
+      kernel,
+      globalWorkOffset,
+      globalWorkSize,
+      localWorkSize,
+      waitList,
+      null,
+    )
 
   def waitForEvent(event: Event) =
     IO.effectAsync { (cb: Callback) =>

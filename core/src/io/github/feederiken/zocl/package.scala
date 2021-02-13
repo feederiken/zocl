@@ -132,6 +132,24 @@ package object zocl {
         waitList,
       )
     }
+  def enqueueNDRangeKernel_(
+      q: CommandQueue,
+      kernel: Kernel,
+      globalWorkOffset: Option[Seq[Long]] = None,
+      globalWorkSize: Seq[Long] = List(1),
+      localWorkSize: Option[Seq[Long]] = None,
+      waitList: Seq[Event] = Nil,
+  ): ZIO[CL, CLException, Unit] =
+    ZIO.service[Service] >>= {
+      _.enqueueNDRangeKernel_(
+        q,
+        kernel,
+        globalWorkOffset,
+        globalWorkSize,
+        localWorkSize,
+        waitList,
+      )
+    }
 
   /**
     * Build (compiles and links) a CL program executable from the program source or binary.
