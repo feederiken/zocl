@@ -326,7 +326,7 @@ private final class Implementation extends Service {
       releaseKernelUnsafe(_).orDie
     }
 
-  private val makeEvent = 
+  private val makeEvent =
     Managed.make {
       IO.effectTotal(new Event)
     } {
@@ -342,22 +342,22 @@ private final class Implementation extends Service {
       ptr: Pointer,
       waitList: Seq[Event],
       event: Event,
-    ) =
-      IO.effectSuspendTotal {
-        val waitListA = waitList.toArray
-        val result = clEnqueueReadBuffer(
-          q,
-          buffer,
-          blockingRead,
-          offset,
-          count,
-          ptr,
-          waitListA.length,
-          nullIfEmpty(waitListA),
-          event,
-        )
-        checkResult(result)
-      }
+  ) =
+    IO.effectSuspendTotal {
+      val waitListA = waitList.toArray
+      val result = clEnqueueReadBuffer(
+        q,
+        buffer,
+        blockingRead,
+        offset,
+        count,
+        ptr,
+        waitListA.length,
+        nullIfEmpty(waitListA),
+        event,
+      )
+      checkResult(result)
+    }
 
   def enqueueReadBuffer(
       q: CommandQueue,
@@ -366,8 +366,9 @@ private final class Implementation extends Service {
       count: Long,
       ptr: Pointer,
       waitList: Seq[Event],
-  ) = makeEvent.tapM {
-    enqueueReadBufferImpl(q,buffer,false,offset,count,ptr,waitList,_)
+  ) =
+    makeEvent.tapM {
+      enqueueReadBufferImpl(q, buffer, false, offset, count, ptr, waitList, _)
     }
 
   def enqueueReadBuffer_(
@@ -378,7 +379,7 @@ private final class Implementation extends Service {
       ptr: Pointer,
       waitList: Seq[Event],
   ) =
-    enqueueReadBufferImpl(q,buffer,false,offset,count,ptr,waitList,null)
+    enqueueReadBufferImpl(q, buffer, false, offset, count, ptr, waitList, null)
 
   def enqueueReadBufferBlocking(
       q: CommandQueue,
@@ -387,10 +388,20 @@ private final class Implementation extends Service {
       count: Long,
       ptr: Pointer,
       waitList: Seq[Event],
-      ) = makeEvent.tapM { event =>
-    blocking.blocking {
-    enqueueReadBufferImpl(q,buffer,true,offset,count,ptr,waitList,event)
-    }
+  ) =
+    makeEvent.tapM { event =>
+      blocking.blocking {
+        enqueueReadBufferImpl(
+          q,
+          buffer,
+          true,
+          offset,
+          count,
+          ptr,
+          waitList,
+          event,
+        )
+      }
     }
 
   def enqueueReadBufferBlocking_(
@@ -402,7 +413,7 @@ private final class Implementation extends Service {
       waitList: Seq[Event],
   ) =
     blocking.blocking {
-    enqueueReadBufferImpl(q,buffer,true,offset,count,ptr,waitList,null)
+      enqueueReadBufferImpl(q, buffer, true, offset, count, ptr, waitList, null)
     }
 
   def enqueueNDRangeKernel(

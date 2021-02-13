@@ -5,14 +5,14 @@ import zio._
 import org.jocl, java.nio
 
 /**
- * Companion object for [Pointer] with shortcut constructors.
- */
+  * Companion object for [Pointer] with shortcut constructors.
+  */
 object Pointer {
   // Assumption: jocl.Pointers are effectively immutable
   private lazy val theNull: Pointer = new jocl.Pointer()
 
   /** Provide a Pointer to null.
-   */
+    */
   def apply(): Pointer = theNull
 
   def apply(arr: Array[Byte]): Pointer = {
@@ -44,9 +44,9 @@ object Pointer {
   }
 
   /** Create a pointer to the given buffer.
-   *
-   * Note that this takes offset and position into account.
-   */
+    *
+    * Note that this takes offset and position into account.
+    */
   def apply(buf: nio.Buffer): Pointer = {
     jocl.Pointer.toBuffer(buf)
   }
