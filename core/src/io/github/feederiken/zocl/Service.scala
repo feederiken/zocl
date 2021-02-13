@@ -41,6 +41,30 @@ trait Service extends Serializable {
       ptr: Pointer,
       waitList: Seq[Event],
   ): Managed[CLException, Event]
+  def enqueueReadBuffer_(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event],
+  ): IO[CLException, Unit]
+  def enqueueReadBufferBlocking(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event],
+  ): ZManaged[Blocking, CLException, Event]
+  def enqueueReadBufferBlocking_(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event],
+  ): ZIO[Blocking, CLException, Unit]
   def enqueueNDRangeKernel(
       q: CommandQueue,
       kernel: Kernel,
@@ -302,22 +326,29 @@ private final class Implementation extends Service {
       releaseKernelUnsafe(_).orDie
     }
 
-  def enqueueReadBuffer(
+  private val makeEvent = 
+    Managed.make {
+      IO.effectTotal(new Event)
+    } {
+      releaseEventUnsafe(_).orDie
+    }
+
+  private def enqueueReadBufferImpl(
       q: CommandQueue,
       buffer: MemObject,
+      blockingRead: Boolean,
       offset: Long,
       count: Long,
       ptr: Pointer,
       waitList: Seq[Event],
-  ) =
-    Managed.make {
+      event: Event,
+    ) =
       IO.effectSuspendTotal {
         val waitListA = waitList.toArray
-        val event = new Event
         val result = clEnqueueReadBuffer(
           q,
           buffer,
-          false,
+          blockingRead,
           offset,
           count,
           ptr,
@@ -325,10 +356,53 @@ private final class Implementation extends Service {
           nullIfEmpty(waitListA),
           event,
         )
-        checkResult(result).as(event)
+        checkResult(result)
       }
-    } {
-      releaseEventUnsafe(_).orDie
+
+  def enqueueReadBuffer(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event],
+  ) = makeEvent.tapM {
+    enqueueReadBufferImpl(q,buffer,false,offset,count,ptr,waitList,_)
+    }
+
+  def enqueueReadBuffer_(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event],
+  ) =
+    enqueueReadBufferImpl(q,buffer,false,offset,count,ptr,waitList,null)
+
+  def enqueueReadBufferBlocking(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event],
+      ) = makeEvent.tapM { event =>
+    blocking.blocking {
+    enqueueReadBufferImpl(q,buffer,true,offset,count,ptr,waitList,event)
+    }
+    }
+
+  def enqueueReadBufferBlocking_(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event],
+  ) =
+    blocking.blocking {
+    enqueueReadBufferImpl(q,buffer,true,offset,count,ptr,waitList,null)
     }
 
   def enqueueNDRangeKernel(

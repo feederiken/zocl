@@ -51,8 +51,7 @@ object Demo extends App {
       dest <- Buffer.byteDirect(Sizeof.cl_float)
       _ <- dest.order(java.nio.ByteOrder.nativeOrder)
       destptr <- dest.withJavaBuffer(b => UIO(Pointer(b)))
-      _ <- enqueueReadBuffer(q, bufC, 0, Sizeof.cl_float, destptr)
-        .use(waitForEvent)
+      _ <- enqueueReadBufferBlocking_(q, bufC, 0, Sizeof.cl_float, destptr)
       r <- dest.getFloat
       _ <- console.putStrLn(s"2 + 2 = $r")
     } yield ()

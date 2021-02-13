@@ -80,6 +80,39 @@ package object zocl {
     ZManaged.service[Service] >>= {
       _.enqueueReadBuffer(q, buffer, offset, count, ptr, waitList)
     }
+  def enqueueReadBuffer_(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event] = Nil,
+  ): ZIO[CL, CLException, Unit] =
+    ZIO.service[Service] >>= {
+      _.enqueueReadBuffer_(q, buffer, offset, count, ptr, waitList)
+    }
+  def enqueueReadBufferBlocking(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event] = Nil,
+  ): ZManaged[CL with Blocking, CLException, Event] =
+    ZManaged.service[Service] >>= {
+      _.enqueueReadBufferBlocking(q, buffer, offset, count, ptr, waitList)
+    }
+  def enqueueReadBufferBlocking_(
+      q: CommandQueue,
+      buffer: MemObject,
+      offset: Long,
+      count: Long,
+      ptr: Pointer,
+      waitList: Seq[Event] = Nil,
+  ): ZIO[CL with Blocking, CLException, Unit] =
+    ZIO.service[Service] >>= {
+      _.enqueueReadBufferBlocking_(q, buffer, offset, count, ptr, waitList)
+    }
 
   def enqueueNDRangeKernel(
       q: CommandQueue,
