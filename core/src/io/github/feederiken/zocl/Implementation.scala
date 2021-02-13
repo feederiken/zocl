@@ -2,9 +2,11 @@ package io.github.feederiken.zocl
 
 import zio._
 
-import org.jocl._, org.jocl.CL._
+import org.jocl._, CL._
 
-private object Implementation {
+private object Implementation extends Service {
+  setExceptionsEnabled(false)
+
   def checkResult(result: Int): IO[CLException, Unit] = {
     if (result < 0)
       IO.fail(new CLException(stringFor_errorCode(result), result))
@@ -31,12 +33,10 @@ private object Implementation {
       cb(checkResult(command_exec_callback_type))
     }
   }
-}
 
-private final class Implementation extends Service {
-
-  import Implementation._
-  setExceptionsEnabled(false)
+  private def nullIfEmpty[A](a: Array[A]): Array[A] =
+    // CL functions don't like empty arrays
+    if (a.isEmpty) null else a
 
   override def retainKernel(kernel: Kernel): Managed[CLException, Kernel] =
     ZManaged.make {
@@ -89,10 +89,6 @@ private final class Implementation extends Service {
     } {
       releaseEventUnsafe(_).orDie
     }
-
-  private def nullIfEmpty[A](a: Array[A]): Array[A] =
-    // CL functions don't like empty arrays
-    if (a.isEmpty) null else a
 
   def getPlatformIds =
     IO.effectSuspendTotal {

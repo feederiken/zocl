@@ -11,7 +11,7 @@ object CL {
     */
   def live: Layer[UnsatisfiedLinkError, CL] =
     ZLayer.fromEffect(
-      IO(new Implementation).refineToOrDie[UnsatisfiedLinkError]
+      IO(Implementation).refineToOrDie[UnsatisfiedLinkError]
     )
   def any: URLayer[CL, CL] = ZLayer.service
 }
