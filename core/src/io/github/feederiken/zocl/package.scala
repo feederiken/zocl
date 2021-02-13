@@ -104,6 +104,12 @@ package object zocl {
     * Build (compiles and links) a CL program executable from the program source or binary.
     *
     * The effect waits for completion asynchronously using a callback.
+    *
+    * Note: Due to the design of the underlying callback interface, unlike
+    * [buildProgramBlocking], the success of this operation does not guarantee
+    * that the program passed compilation. It only guarantees that the
+    * compilation is no longer in progress. Make sure to check the build status
+    * on the program object, or use [buildProgramBlocking].
     */
   def buildProgram(
       prog: Program,
