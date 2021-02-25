@@ -19,7 +19,7 @@ object core extends common with PublishModule {
   def ivyDeps = Agg(zio, jocl)
 
   def artifactName = "zocl-core"
-  def publishVersion = "0.0.2"
+  def publishVersion = "0.0.3"
   def pomSettings = PomSettings(
     description = "ZIO bindings for OpenCL",
     organization = "io.github.feederiken",
